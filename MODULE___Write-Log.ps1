@@ -44,33 +44,35 @@ function Write-Log {
         [ValidateSet('START','EXECUTE','FINISH','INFO','ERROR','WARNING','STATUS','LINE')]
         [string]$Process,
         [int32]$StatusNow,
-        [int32]$StatusFull
+        [int32]$StatusFull,
+        [ValidateSet('BASIC','FULL','DEBUG')]
+        [string]$LogLevel                               # not yet impemented
     )
 
     if ($Message -or $Process -in @('STATUS','LINE')) {
 
-        $LogPrefix = "$(Get-Date -Format 'yyyyMMddHHmmss')"
+        $LogPrefix = "$(Get-Date -Format 'yyyyMMddHHmmssfff')"
         $LogProcess = $Process + ' ' * (7-$Process.Length)   
 
         if (-not($Message)) {
 
             if ($Process -eq 'STATUS' -and $StatusNow -and $StatusFull -and $StatusNow -le $StatusFull) {
                 $Percent = [int32][math]::Round(($StatusNow * 100) / $StatusFull, 0, 1)
-                $Output = $LogPrefix + ' │ ' + $LogProcess + ' │' + ('█' * $Percent) + ('─' * (100 - $Percent)) + '│ ' + $Percent + '%'
+                $Output = $LogPrefix + ' | ' + $LogProcess + ' | ' + ('O' * $Percent) + ('-' * (100 - $Percent)) + ' | ' + $Percent + '%'
             } elseif ($Process -eq 'LINE') {
-                $Output = '─' * 140
+                $Output = '-' * 140
             } else {
-                $Output = $LogPrefix + ' │ ' + $LogProcess + ' │' + ('─' * 40) + ' NO STATUS AVAILABLE ' + ('─' * 39) + '│'
+                $Output = $LogPrefix + ' | ' + $LogProcess + ' | ' + ('-' * 40) + ' NO STATUS AVAILABLE ' + ('-' * 39) + ' |'
             }
 
         } else {
-            $Output = $LogPrefix + ' │ ' + $LogProcess + ' │ ' + $Message
+            $Output = $LogPrefix + ' | ' + $LogProcess + ' | ' + $Message
         }
 
         [System.IO.File]::AppendAllLines([string]$FileName,[string[]]$Output)
         
     } else {
-        Throw 'Parameter -Message is required if -Process -ne "STATUS"'
+        Write-Error "LINE $($MyInvocation.ScriptLineNumber) : Parameter -Message is required if -Process -ne `"STATUS`" -or `"LINE`""
     }
 
 }
@@ -109,10 +111,10 @@ function Clear-LogHistory {
         [timespan]$KeepTimespan = [timespan]::FromDays(30)
     )
 
-    $KeepFrom = ((Get-Date) - $KeepTimespan).ToString('yyyyMMddHHmmss')
+    $KeepFrom = ((Get-Date) - $KeepTimespan).ToString('yyyyMMddHHmmssfff')
 
     $buffer = [System.IO.File]::ReadAllLines($FileName)
-    $buffer = $buffer.Where({$_.substring(0,1) -match '^\d' -and $_.substring(0,16) -ge $KeepFrom},'SkipUntil')
+    $buffer = $buffer.Where({$_.substring(0,1) -match '^\d' -and $_.substring(0,17) -ge $KeepFrom},'SkipUntil')
     [System.IO.File]::WriteAllLines($FileName,$buffer)
 
 }
