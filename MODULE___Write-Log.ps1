@@ -51,7 +51,8 @@ function Write-Log {
 
     if ($Message -or $Process -in @('STATUS','LINE')) {
 
-        $LogPrefix = "$(Get-Date -Format 'yyyyMMddHHmmssfff')"
+        #$LogPrefix = "$(Get-Date -Format 'yyyyMMddHHmmssfff')"
+        $LogPrefix = [datetime]::Now.ToString('yyyyMMddHHmmssfff')
         $LogProcess = $Process + ' ' * (7-$Process.Length)   
 
         if (-not($Message)) {
@@ -111,7 +112,7 @@ function Clear-LogHistory {
         [timespan]$KeepTimespan = [timespan]::FromDays(30)
     )
 
-    $KeepFrom = ((Get-Date) - $KeepTimespan).ToString('yyyyMMddHHmmssfff')
+    $KeepFrom = (([datetime]::Now) - $KeepTimespan).ToString('yyyyMMddHHmmssfff')
 
     $buffer = [System.IO.File]::ReadAllLines($FileName)
     $buffer = $buffer.Where({$_.substring(0,1) -match '^\d' -and $_.substring(0,17) -ge $KeepFrom},'SkipUntil')
